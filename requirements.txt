@@ -1,0 +1,4 @@
+chandra
+pillow
+opencv-python
+numpy
