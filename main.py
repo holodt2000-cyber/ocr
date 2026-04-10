@@ -12,6 +12,23 @@ import logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
+# Auto-detect Tesseract path on Windows
+if os.name == 'nt':  # Windows
+    tesseract_paths = [
+        os.path.expanduser(r'~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'),
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+    ]
+    for path in tesseract_paths:
+        if os.path.exists(path):
+            pytesseract.pytesseract.tesseract_cmd = path
+            # Set TESSDATA_PREFIX environment variable
+            tessdata_dir = os.path.dirname(path)
+            os.environ['TESSDATA_PREFIX'] = tessdata_dir
+            logger.info(f"Tesseract found at: {path}")
+            logger.info(f"TESSDATA_PREFIX set to: {tessdata_dir}")
+            break
+
 class OCRProcessor:
     """OCR processor using Tesseract."""
     
@@ -19,11 +36,8 @@ class OCRProcessor:
         self.config = config
         self._check_tesseract()
     
-        def _check_tesseract(self):
+    def _check_tesseract(self):
         """Check if Tesseract is available."""
-        if not TESSERACT_AVAILABLE:
-            raise ImportError("pytesseract not installed. Run: pip install pytesseract")
-        
         try:
             pytesseract.get_tesseract_version()
         except Exception as e:

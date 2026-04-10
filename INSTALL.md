@@ -25,7 +25,21 @@
 6. Нажмите "ОК" во всех окнах
 7. **Перезапустите командную строку/терминал**
 
-### Шаг 4: Проверить установку
+### Шаг 4: Скачать языковые файлы
+
+**ВАЖНО**: После установки Tesseract нужно скачать языковые файлы!
+
+#### Автоматическая загрузка (рекомендуется):
+```cmd
+python download_tessdata.py
+```
+
+#### Ручная загрузка:
+1. Скачайте файл: https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+2. Сохраните в папку: `C:\Users\[ваше_имя]\AppData\Local\Programs\Tesseract-OCR\tessdata\`
+3. Для русского языка: https://github.com/tesseract-ocr/tessdata/raw/main/rus.traineddata
+
+### Шаг 5: Проверить установку
 Откройте новое окно командной строки и выполните:
 ```cmd
 tesseract --version

@@ -59,11 +59,26 @@ def check_tesseract_binary():
     """Check if Tesseract OCR binary is available."""
     try:
         import pytesseract
+        import os
+        
+        # Auto-detect Tesseract path on Windows
+        if os.name == 'nt':  # Windows
+            tesseract_paths = [
+                os.path.expanduser(r'~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'),
+                r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+                r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
+            ]
+            for path in tesseract_paths:
+                if os.path.exists(path):
+                    pytesseract.pytesseract.tesseract_cmd = path
+                    print(f"[INFO] Tesseract found at: {path}")
+                    break
+        
         version = pytesseract.get_tesseract_version()
         print(f"[OK] Tesseract OCR installed (version: {version})")
         return True
     except Exception as e:
-        print("[ERROR] Tesseract OCR not found in PATH")
+        print("[ERROR] Tesseract OCR not found")
         print("        Please install Tesseract OCR:")
         print("        - Windows: See INSTALL.md")
         print("        - macOS: brew install tesseract")
