@@ -22,8 +22,7 @@ if os.name == 'nt':  # Windows
     for path in tesseract_paths:
         if os.path.exists(path):
             pytesseract.pytesseract.tesseract_cmd = path
-            # Set TESSDATA_PREFIX environment variable
-            tessdata_dir = os.path.dirname(path)
+            tessdata_dir = os.path.join(os.path.dirname(path), 'tessdata')
             os.environ['TESSDATA_PREFIX'] = tessdata_dir
             logger.info(f"Tesseract found at: {path}")
             logger.info(f"TESSDATA_PREFIX set to: {tessdata_dir}")
@@ -32,7 +31,7 @@ if os.name == 'nt':  # Windows
 class OCRProcessor:
     """OCR processor using Tesseract."""
     
-        def __init__(self, config: str = r'--oem 3 --psm 6', lang: str = 'eng'):
+    def __init__(self, config: str = r'--oem 3 --psm 6', lang: str = 'eng'):
         self.config = config
         self.lang = lang
         self._check_tesseract()
@@ -65,16 +64,13 @@ class OCRProcessor:
         logger.info(f"Processing image: {image_path}")
         
         try:
-            # Read image using OpenCV
             img = cv2.imread(image_path)
             if img is None:
                 raise ValueError(f"Failed to load image: {image_path}")
             
-                        # Perform OCR
             result = pytesseract.image_to_string(img, lang=self.lang, config=self.config)
             logger.info("OCR completed successfully")
             return result.strip()
-        
         except Exception as e:
             logger.error(f"OCR processing failed: {e}")
             raise
@@ -88,9 +84,8 @@ class OCRProcessor:
 
 def main():
     """Main entry point."""
-    processor = OCRProcessor()
+    processor = OCRProcessor(lang='eng+rus')
     
-    # Check if image path provided as argument
     if len(sys.argv) > 1:
         image_path = sys.argv[1]
         try:
@@ -102,7 +97,6 @@ def main():
             logger.error(f"Error: {e}")
             sys.exit(1)
     else:
-        # Try to process input.png by default
         try:
             result = processor.process_default_input()
             print("\n=== OCR Result (input.png) ===")
