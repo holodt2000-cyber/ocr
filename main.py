@@ -32,8 +32,9 @@ if os.name == 'nt':  # Windows
 class OCRProcessor:
     """OCR processor using Tesseract."""
     
-    def __init__(self, config: str = r'--oem 3 --psm 6'):
+        def __init__(self, config: str = r'--oem 3 --psm 6', lang: str = 'eng'):
         self.config = config
+        self.lang = lang
         self._check_tesseract()
     
     def _check_tesseract(self):
@@ -69,8 +70,8 @@ class OCRProcessor:
             if img is None:
                 raise ValueError(f"Failed to load image: {image_path}")
             
-            # Perform OCR
-            result = pytesseract.image_to_string(img, config=self.config)
+                        # Perform OCR
+            result = pytesseract.image_to_string(img, lang=self.lang, config=self.config)
             logger.info("OCR completed successfully")
             return result.strip()
         

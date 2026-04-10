@@ -22,8 +22,8 @@ def create_sample_image():
 
 def example_basic_usage():
     """Базовое использование."""
-    print("\n=== Пример 1: Базовое использование ===")
-    processor = OCRProcessor()
+    print("\n=== Пример 1: Базовое использование (английский) ===")
+    processor = OCRProcessor(lang='eng')
     
     if os.path.exists('input.png'):
         result = processor.process_default_input()
@@ -31,11 +31,22 @@ def example_basic_usage():
     else:
         print("Файл input.png не найден. Создайте его с помощью create_sample_image()")
 
+def example_multilang_usage():
+    """Использование с несколькими языками."""
+    print("\n=== Пример 2: Английский + Русский ===")
+    processor = OCRProcessor(lang='eng+rus')
+    
+    if os.path.exists('input.png'):
+        result = processor.process_default_input()
+        print(f"Распознанный текст: {result}")
+    else:
+        print("Файл input.png не найден.")
+
 def example_custom_config():
     """Использование с кастомной конфигурацией."""
-    print("\n=== Пример 2: Кастомная конфигурация ===")
+    print("\n=== Пример 3: Кастомная конфигурация ===")
     # PSM 3 = Fully automatic page segmentation
-    processor = OCRProcessor(config='--oem 3 --psm 3')
+    processor = OCRProcessor(config='--oem 3 --psm 3', lang='eng')
     
     if os.path.exists('input.png'):
         result = processor.process_image('input.png')
@@ -43,8 +54,8 @@ def example_custom_config():
 
 def example_batch_processing():
     """Пакетная обработка нескольких изображений."""
-    print("\n=== Пример 3: Пакетная обработка ===")
-    processor = OCRProcessor()
+    print("\n=== Пример 4: Пакетная обработка ===")
+    processor = OCRProcessor(lang='eng+rus')
     
     # Список файлов для обработки
     image_files = ['input.png']  # Добавьте больше файлов при необходимости
@@ -66,6 +77,7 @@ if __name__ == "__main__":
     
     # Запускаем примеры
     example_basic_usage()
+    example_multilang_usage()
     example_custom_config()
     example_batch_processing()
     

@@ -10,17 +10,24 @@ Error opening data file eng.traineddata
 
 ## Решение
 
-### Шаг 1: Скачать языковой файл
+### Шаг 1: Скачать языковые файлы
 
+**Для английского языка:**
 1. Откройте в браузере: https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
 2. Файл должен автоматически скачаться (размер ~25 MB)
 3. Если не скачался, нажмите правой кнопкой → "Сохранить как..."
 
-### Шаг 2: Поместить файл в правильную папку
+**Для русского языка (опционально):**
+1. Откройте в браузере: https://github.com/tesseract-ocr/tessdata/raw/main/rus.traineddata
+2. Файл должен автоматически скачаться (размер ~30 MB)
+3. Если не скачался, нажмите правой кнопкой → "Сохранить как..."
+
+### Шаг 2: Поместить файлы в правильную папку
 
 **Для вашей системы путь:**
 ```
 C:\Users\user\AppData\Local\Programs\Tesseract-OCR\tessdata\eng.traineddata
+C:\Users\user\AppData\Local\Programs\Tesseract-OCR\tessdata\rus.traineddata
 ```
 
 **Как найти папку:**
@@ -64,10 +71,25 @@ python main.py
 После установки в папке `tessdata` должны быть:
 ```
 tessdata/
-├── eng.traineddata  ← Этот файл нужен!
+├── eng.traineddata  ← Английский (обязательно)
+├── rus.traineddata  ← Русский (опционально)
 ├── configs/
 ├── script/
 └── tessconfigs/
+```
+
+## Использование нескольких языков
+
+```python
+from main import OCRProcessor
+
+# Английский + Русский одновременно
+processor = OCRProcessor(lang='eng+rus')
+text = processor.process_image('mixed_text.png')
+
+# Только русский
+processor = OCRProcessor(lang='rus')
+text = processor.process_image('russian_text.png')
 ```
 
 ## Альтернативный способ (если браузер не работает)

@@ -43,6 +43,24 @@ python check_installation.py
 python main.py
 ```
 
+### Использование с несколькими языками
+
+```python
+from main import OCRProcessor
+
+# Английский + Русский
+processor = OCRProcessor(lang='eng+rus')
+text = processor.process_default_input()
+print(text)
+
+# Только русский
+processor = OCRProcessor(lang='rus')
+text = processor.process_image('document.png')
+print(text)
+```
+
+**Важно:** Для работы с русским языком скачайте `rus.traineddata` из того же источника.
+
 ### Вариант 2: Обработка конкретного файла
 Укажите путь к изображению:
 ```bash

@@ -56,8 +56,8 @@ def main():
     print("Tesseract Language Data Downloader")
     print("="*60 + "\n")
     
-    # Download English by default
-    languages = ['eng']
+    # Download English and Russian by default
+    languages = ['eng', 'rus']
     
     # Check if user specified languages
     if len(sys.argv) > 1:
