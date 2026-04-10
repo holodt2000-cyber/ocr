@@ -36,11 +36,19 @@ env/
 .DS_Store
 Thumbs.db
 
-# Project specific
+# Project specific - Generated files
 input.png
-output/
+output*.png
+output*.html
+edited_*.png
+cleaned_*.png
+highlighted_*.png
 *.log
 
 # Environment variables
 .env
 .env.local
+
+# Test files
+test_images/
+temp/
