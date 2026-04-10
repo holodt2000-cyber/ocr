@@ -18,7 +18,7 @@ def create_sample_image():
     
     # Сохраняем как input.png
     cv2.imwrite('input.png', img)
-    print("✓ Создан файл input.png с примером текста")
+    print("[OK] Создан файл input.png с примером текста")
 
 def example_basic_usage():
     """Базовое использование."""

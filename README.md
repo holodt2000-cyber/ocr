@@ -4,15 +4,30 @@
 
 ## Установка
 
-1. Установите Tesseract OCR:
-   - **Windows**: Скачайте установщик с [GitHub](https://github.com/UB-Mannheim/tesseract/wiki)
+### Быстрая установка
+
+1. **Установите Tesseract OCR** (см. подробную инструкцию в [INSTALL.md](INSTALL.md)):
+   - **Windows**: Скачайте установщик с [GitHub](https://github.com/UB-Mannheim/tesseract/wiki) и добавьте в PATH
    - **macOS**: `brew install tesseract`
    - **Linux**: `sudo apt-get install tesseract-ocr`
 
-2. Установите Python зависимости:
+2. **Установите Python зависимости**:
 ```bash
 pip install -r requirements.txt
 ```
+
+⚠️ **Важно**: После установки Tesseract перезапустите командную строку/терминал!
+
+📖 **Подробная инструкция**: См. [INSTALL.md](INSTALL.md) для детальных шагов установки
+
+### Проверка установки
+
+После установки всех зависимостей запустите:
+```bash
+python check_installation.py
+```
+
+Этот скрипт проверит все необходимые компоненты и сообщит о проблемах.
 
 ## Использование
 

@@ -17,6 +17,30 @@ class OCRProcessor:
     
     def __init__(self, config: str = r'--oem 3 --psm 6'):
         self.config = config
+        self._check_tesseract()
+    
+        def _check_tesseract(self):
+        """Check if Tesseract is available."""
+        if not TESSERACT_AVAILABLE:
+            raise ImportError("pytesseract not installed. Run: pip install pytesseract")
+        
+        try:
+            pytesseract.get_tesseract_version()
+        except Exception as e:
+            error_msg = (
+                "\n" + "="*60 + "\n"
+                "ERROR: Tesseract OCR is not installed or not in PATH!\n"
+                "="*60 + "\n"
+                "Please install Tesseract OCR:\n"
+                "  - Windows: See INSTALL.md for detailed instructions\n"
+                "  - macOS: brew install tesseract\n"
+                "  - Linux: sudo apt-get install tesseract-ocr\n\n"
+                "After installation, restart your terminal/command prompt.\n"
+                "For detailed instructions, see: INSTALL.md\n"
+                "="*60
+            )
+            logger.error(error_msg)
+            raise RuntimeError(error_msg) from e
     
     def process_image(self, image_path: str) -> str:
         """Process image and extract text."""
