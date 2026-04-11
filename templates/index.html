@@ -82,14 +82,44 @@
             padding: 20px;
             overflow: auto;
             background: #f5f5f5;
+            position: relative;
         }
         
-        #imageCanvas {
-            max-width: 100%;
+        .image-container {
+            position: relative;
+            display: inline-block;
             border: 2px solid #ddd;
             border-radius: 8px;
             background: white;
-            cursor: crosshair;
+        }
+        
+        #imageCanvas {
+            display: block;
+            max-width: 100%;
+        }
+        
+        .text-overlay {
+            position: absolute;
+            cursor: move;
+            user-select: text;
+            padding: 2px 4px;
+            font-family: Arial, sans-serif;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+        
+        .text-overlay:hover {
+            background: rgba(255, 255, 0, 0.3);
+        }
+        
+        .text-overlay.selected {
+            background: rgba(100, 200, 255, 0.4);
+            outline: 2px solid #2196F3;
+        }
+        
+        .text-overlay.dragging {
+            opacity: 0.7;
+            cursor: grabbing;
         }
         
         .sidebar {
@@ -246,7 +276,10 @@
         
         <div class="main-content">
             <div class="canvas-area">
-                <img id="imageCanvas" src="" alt="Загрузите изображение" style="display:none;">
+                <div class="image-container" id="imageContainer" style="display:none;">
+                    <img id="imageCanvas" src="" alt="">
+                    <div id="textOverlay"></div>
+                </div>
                 <div id="placeholder" style="text-align:center; padding:100px; color:#999;">
                     <h2>📁 Загрузите изображение для начала работы</h2>
                     <p>Поддерживаются форматы: PNG, JPG, JPEG, BMP, TIFF</p>
@@ -291,6 +324,8 @@
     <script>
         let selectedBoxId = null;
         let boxes = [];
+        let draggedElement = null;
+        let dragOffset = { x: 0, y: 0 };
         
         document.getElementById('fileInput').addEventListener('change', uploadImage);
         
@@ -315,7 +350,7 @@
                 if (data.success) {
                     const img = document.getElementById('imageCanvas');
                     img.src = 'data:image/png;base64,' + data.image;
-                    img.style.display = 'block';
+                    document.getElementById('imageContainer').style.display = 'inline-block';
                     document.getElementById('placeholder').style.display = 'none';
                     document.getElementById('imageInfo').textContent = data.filename;
                     setStatus('Изображение загружено');
@@ -340,7 +375,7 @@
                 if (data.success) {
                     boxes = data.boxes;
                     updateTextList();
-                    await renderImage();
+                    renderTextOverlay();
                     setStatus(`Распознано ${data.count} элементов`);
                 } else {
                     alert('Ошибка OCR: ' + data.error);
@@ -364,7 +399,7 @@
                 item.innerHTML = `
                     <div class="text-item-text">${box.text}</div>
                     <div class="text-item-info">
-                        Позиция: (${box.x}, ${box.y}) | Уверенность: ${box.confidence}%
+                        Позиция: (${box.x}, ${box.y})
                     </div>
                 `;
                 
@@ -377,9 +412,14 @@
         function selectBox(id) {
             selectedBoxId = id;
             
-            // Update UI
+            // Update list UI
             document.querySelectorAll('.text-item').forEach((item, index) => {
                 item.classList.toggle('selected', boxes[index].id === id);
+            });
+            
+            // Update overlay UI
+            document.querySelectorAll('.text-overlay').forEach(el => {
+                el.classList.toggle('selected', parseInt(el.dataset.id) === id);
             });
             
             // Update edit field
@@ -410,7 +450,7 @@
                     const box = boxes.find(b => b.id === selectedBoxId);
                     if (box) box.text = newText;
                     updateTextList();
-                    await renderImage();
+                    renderTextOverlay();
                     setStatus('Текст обновлен');
                 }
             } catch (error) {
@@ -438,7 +478,7 @@
                     selectedBoxId = null;
                     document.getElementById('editText').value = '';
                     updateTextList();
-                    await renderImage();
+                    renderTextOverlay();
                     setStatus('Элемент удален');
                 }
             } catch (error) {
@@ -465,7 +505,7 @@
                 if (data.success) {
                     boxes.push(data.box);
                     updateTextList();
-                    await renderImage();
+                    renderTextOverlay();
                     setStatus('Метка добавлена');
                 }
             } catch (error) {
@@ -473,18 +513,92 @@
             }
         }
         
-        async function renderImage() {
-            try {
-                const response = await fetch('/render_image');
-                const data = await response.json();
+        function renderTextOverlay() {
+            const overlay = document.getElementById('textOverlay');
+            overlay.innerHTML = '';
+            
+            boxes.forEach(box => {
+                const textEl = document.createElement('div');
+                textEl.className = 'text-overlay';
+                textEl.textContent = box.text;
+                textEl.style.left = box.x + 'px';
+                textEl.style.top = box.y + 'px';
+                textEl.style.fontSize = Math.max(12, box.height * 0.8) + 'px';
+                textEl.dataset.id = box.id;
                 
-                if (data.success) {
-                    const img = document.getElementById('imageCanvas');
-                    img.src = 'data:image/png;base64,' + data.image;
-                }
-            } catch (error) {
-                console.error('Ошибка рендеринга:', error);
+                // Click to select
+                textEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectBox(box.id);
+                });
+                
+                // Drag to move
+                textEl.addEventListener('mousedown', startDrag);
+                
+                overlay.appendChild(textEl);
+            });
+        }
+        
+        function startDrag(e) {
+            if (e.button !== 0) return; // Only left click
+            
+            draggedElement = e.target;
+            const rect = draggedElement.getBoundingClientRect();
+            const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
+            
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            
+            draggedElement.classList.add('dragging');
+            
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDrag);
+            
+            e.preventDefault();
+        }
+        
+        function onDrag(e) {
+            if (!draggedElement) return;
+            
+            const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
+            
+            let newX = e.clientX - containerRect.left - dragOffset.x;
+            let newY = e.clientY - containerRect.top - dragOffset.y;
+            
+            // Keep within bounds
+            newX = Math.max(0, Math.min(newX, containerRect.width - draggedElement.offsetWidth));
+            newY = Math.max(0, Math.min(newY, containerRect.height - draggedElement.offsetHeight));
+            
+            draggedElement.style.left = newX + 'px';
+            draggedElement.style.top = newY + 'px';
+        }
+        
+        async function stopDrag(e) {
+            if (!draggedElement) return;
+            
+            draggedElement.classList.remove('dragging');
+            
+            // Update box position
+            const boxId = parseInt(draggedElement.dataset.id);
+            const box = boxes.find(b => b.id === boxId);
+            
+            if (box) {
+                box.x = parseInt(draggedElement.style.left);
+                box.y = parseInt(draggedElement.style.top);
+                
+                // Update on server
+                await fetch('/update_position', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: boxId, x: box.x, y: box.y })
+                });
+                
+                updateTextList();
             }
+            
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDrag);
+            draggedElement = null;
         }
         
         async function saveImage() {

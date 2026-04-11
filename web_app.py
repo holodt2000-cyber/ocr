@@ -127,6 +127,23 @@ def update_box():
     
     return jsonify({'error': 'Box not found'}), 404
 
+@app.route('/update_position', methods=['POST'])
+def update_position():
+    """Update text box position."""
+    data = request.json
+    box_id = data.get('id')
+    new_x = data.get('x')
+    new_y = data.get('y')
+    
+    if box_id is not None and new_x is not None and new_y is not None:
+        for box in session_data['text_boxes']:
+            if box['id'] == box_id:
+                box['x'] = new_x
+                box['y'] = new_y
+                return jsonify({'success': True})
+    
+    return jsonify({'error': 'Box not found'}), 404
+
 @app.route('/delete_box', methods=['POST'])
 def delete_box():
     """Delete text box."""
@@ -203,7 +220,7 @@ def render_image():
 
 @app.route('/save_image', methods=['GET'])
 def save_image():
-    """Save rendered image."""
+    """Save rendered image with text overlay."""
     if not session_data['image_path']:
         return jsonify({'error': 'No image'}), 400
     
@@ -211,15 +228,21 @@ def save_image():
         img = Image.open(session_data['image_path'])
         draw = ImageDraw.Draw(img)
         
-        try:
-            font = ImageFont.truetype("arial.ttf", 14)
-        except:
-            font = ImageFont.load_default()
-        
+        # Draw text directly on image
         for box in session_data['text_boxes']:
-            x, y, w, h = box['x'], box['y'], box['width'], box['height']
-            draw.rectangle([x, y, x + w, y + h], outline='red', width=2)
-            draw.text((x, y - 15), box['text'], fill='red', font=font)
+            x, y = box['x'], box['y']
+            text = box['text']
+            font_size = max(12, int(box['height'] * 0.8))
+            
+            try:
+                font = ImageFont.truetype("arial.ttf", font_size)
+            except:
+                font = ImageFont.load_default()
+            
+            # Draw text with white background for visibility
+            bbox = draw.textbbox((x, y), text, font=font)
+            draw.rectangle(bbox, fill='white')
+            draw.text((x, y), text, fill='black', font=font)
         
         # Save to buffer
         buffer = io.BytesIO()
