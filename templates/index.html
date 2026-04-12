@@ -132,30 +132,20 @@
             cursor: grabbing;
         }
         
-        .sidebar {
+                .sidebar {
             width: 350px;
             background: white;
             border-left: 2px solid #e0e0e0;
             display: flex;
             flex-direction: column;
+            max-height: calc(100vh - 250px);
         }
         
-        .sidebar-header {
-            padding: 20px;
-            background: #f8f9fa;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        .sidebar-header h3 {
-            color: #333;
-            font-size: 1.3em;
-        }
-        
-        .text-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-        }
+                        .text-list {
+                            flex: 4;
+                            overflow-y: auto;
+                            padding: 10px;
+                        }
         
         .text-item {
             padding: 15px;
@@ -188,19 +178,22 @@
             color: #666;
         }
         
-        .edit-panel {
-            padding: 20px;
+                        .edit-panel {
+            padding: 12px;
             background: #f8f9fa;
             border-top: 2px solid #e0e0e0;
+            flex-shrink: 0;
+            flex: 0 0 auto;
         }
         
-        .edit-panel h4 {
-            margin-bottom: 15px;
+                .edit-panel h4 {
+            margin-bottom: 10px;
             color: #333;
+            font-size: 1.1em;
         }
         
-        .form-group {
-            margin-bottom: 15px;
+                .form-group {
+            margin-bottom: 10px;
         }
         
         .form-group label {
@@ -210,12 +203,29 @@
             font-weight: 600;
         }
         
-        .form-group input {
+                .form-group input {
             width: 100%;
             padding: 10px;
             border: 2px solid #ddd;
             border-radius: 6px;
             font-size: 14px;
+        }
+        
+                .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 13px;
+            min-height: 60px;
+            max-height: 100px;
+            resize: vertical;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
         }
         
         .form-group input:focus {
@@ -283,9 +293,13 @@
                 🗑️ Удалить
             </button>
             
-            <button class="btn btn-info" onclick="toggleBackground()" id="bgToggleBtn">
-                🖼️ Белый фон
-            </button>
+                        <button class="btn btn-info" onclick="toggleBackground()" id="bgToggleBtn">
+                            🖼️ Белый фон
+                        </button>
+            
+                        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #667eea; border-radius: 8px; color: white; font-size: 14px; font-weight: 600;">
+                            📋 <span id="boxCount">0</span>
+                        </div>
         </div>
         
         <div class="main-content">
@@ -300,28 +314,23 @@
                 </div>
             </div>
             
-            <div class="sidebar">
-                <div class="sidebar-header">
-                    <h3>Распознанный текст</h3>
-                    <p id="boxCount" style="color:#666; margin-top:5px;">0 элементов</p>
-                </div>
-                
+                        <div class="sidebar">
                 <div class="text-list" id="textList">
                     <p style="text-align:center; color:#999; padding:20px;">
                         Запустите OCR для распознавания текста
                     </p>
                 </div>
                 
-                <div class="edit-panel">
-                    <h4>Редактировать</h4>
-                    <div class="form-group">
-                        <label>Текст:</label>
-                        <input type="text" id="editText" placeholder="Выберите элемент">
-                    </div>
-                    <button class="btn btn-primary" onclick="updateText()" style="width:100%;">
-                        Обновить
-                    </button>
-                </div>
+                                <div class="edit-panel">
+                                    <h4>Редактировать</h4>
+                                    <div class="form-group">
+                                        <label>Текст:</label>
+                                        <input type="text" id="editText" placeholder="Выберите элемент">
+                                    </div>
+                                    <button class="btn btn-primary" onclick="updateText()" style="width:100%;">
+                                        Обновить
+                                    </button>
+                                </div>
             </div>
         </div>
         
@@ -446,7 +455,7 @@
                 list.appendChild(item);
             });
             
-            document.getElementById('boxCount').textContent = `${boxes.length} элементов`;
+            document.getElementById('boxCount').textContent = boxes.length;
         }
         
         function selectBox(id) {
