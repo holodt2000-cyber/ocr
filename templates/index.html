@@ -341,9 +341,9 @@
         let draggedElement = null;
         let dragOffset = { x: 0, y: 0 };
         
-        document.getElementById('fileInput').addEventListener('change', uploadImage);
+                document.getElementById('fileInput').addEventListener('change', uploadImage);
         document.getElementById("imageContainer").addEventListener("click", function(e) {
-            if (addMode && e.target.id === "imageCanvas") {
+            if (addMode && (e.target.id === "imageCanvas" || e.target.id === "imageContainer")) {
                 const rect = this.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
@@ -360,7 +360,7 @@
                             renderTextOverlay();
                             addMode = false;
                             document.getElementById("addModeBtn").style.background = "#9C27B0";
-                            document.getElementById("addModeBtn").textContent = "Добавить метку";
+                            document.getElementById("addModeBtn").innerHTML = "➕ Добавить метку";
                         }
                     });
                 }
@@ -648,15 +648,15 @@
         
         let addMode = false;
         
-        function toggleAddMode() {
+                function toggleAddMode() {
             addMode = !addMode;
             const btn = document.getElementById("addModeBtn");
             if (addMode) {
                 btn.style.background = "#4CAF50";
-                btn.textContent = "Кликните на изображение";
+                btn.innerHTML = "✓ Кликните на изображение";
             } else {
                 btn.style.background = "#9C27B0";
-                btn.textContent = "Добавить метку";
+                btn.innerHTML = "➕ Добавить метку";
             }
         }
         
