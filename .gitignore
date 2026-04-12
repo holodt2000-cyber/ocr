@@ -44,6 +44,7 @@ edited_*.png
 cleaned_*.png
 highlighted_*.png
 *.log
+uploads/
 
 # Environment variables
 .env
