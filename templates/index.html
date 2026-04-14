@@ -1,390 +1,221 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OCR Web Editor</title>
+    <title>Archivist OCR</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary': '#162839',
+                        'primary-container': '#2c3e50',
+                        'secondary': '#79564b',
+                        'surface': '#fbfbe2',
+                        'surface-container': '#efefd7',
+                        'surface-container-low': '#f5f5dc',
+                        'on-primary': '#ffffff',
+                        'on-surface': '#1b1d0e'
+                    },
+                    fontFamily: {
+                        'headline': ['Manrope', 'sans-serif'],
+                        'body': ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400; }
+        body { font-family: 'Inter', sans-serif; }
+        h1, h2, h3 { font-family: 'Manrope', sans-serif; }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-        
-        .toolbar {
-            background: #f8f9fa;
-            padding: 20px;
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            border-bottom: 2px solid #e0e0e0;
-        }
-        
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .btn-primary { background: #4CAF50; color: white; }
-        .btn-info { background: #2196F3; color: white; }
-        .btn-warning { background: #FF9800; color: white; }
-        .btn-purple { background: #9C27B0; color: white; }
-        .btn-danger { background: #F44336; color: white; }
-        
-                .main-content {
-            display: flex;
-            height: calc(100vh - 200px);
-        }
-        
-        .canvas-area {
-            flex: 1;
-            padding: 20px;
-            overflow: auto;
-            background: #f5f5f5;
-            position: relative;
-        }
-        
-                .image-container {
-            position: relative;
-            display: inline-block;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            background: white;
-        }
-        
-        .image-container.white-bg {
-            background: white;
-        }
-        
-        #imageCanvas {
-            display: block;
-            max-width: 100%;
-            transition: opacity 0.3s;
-        }
-        
-        #imageCanvas.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-        
+        /* Text overlay styles */
         .text-overlay {
             position: absolute;
             cursor: move;
             user-select: text;
-            padding: 3px 6px; background: rgba(255,255,255,0.95); border: 1px solid rgba(0,0,0,0.15); border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            padding: 2px 4px;
+            background: transparent;
+            border: none;
             font-family: Arial, sans-serif;
             white-space: nowrap;
-            transition: background 0.2s;
+            color: #000;
         }
+        .text-overlay:hover { background: rgba(255, 255, 0, 0.2); }
+        .text-overlay.selected { background: rgba(100, 200, 255, 0.3); }
+        .text-overlay.dragging { opacity: 0.7; cursor: grabbing; }
         
-        .text-overlay:hover {
-            background: rgba(255, 255, 0, 0.3);
-        }
-        
-        .text-overlay.selected {
-            background: rgba(100, 200, 255, 0.4);
-            outline: 2px solid #2196F3;
-        }
-        
-        .text-overlay.dragging {
-            opacity: 0.7;
-            cursor: grabbing;
-        }
-        
-                .sidebar {
-                    width: 280px;
-                    background: white;
-                    border-left: 2px solid #e0e0e0;
-                    display: flex;
-                    flex-direction: column;
-                    max-height: calc(100vh - 200px);
-                }
-        
-                        .text-list {
-                            flex: 4;
-                            overflow-y: auto;
-                            padding: 10px;
-                        }
-        
-        .text-item {
-            padding: 15px;
-            margin-bottom: 10px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-left: 4px solid #667eea;
-        }
-        
-        .text-item:hover {
-            background: #e3f2fd;
-            transform: translateX(5px);
-        }
-        
-        .text-item.selected {
-            background: #bbdefb;
-            border-left-color: #2196F3;
-        }
-        
-        .text-item-text {
-            font-weight: 600;
-            color: #333;
-            margin-bottom: 5px;
-        }
-        
-        .text-item-info {
-            font-size: 12px;
-            color: #666;
-        }
-        
-                        .edit-panel {
-            padding: 12px;
-            background: #f8f9fa;
-            border-top: 2px solid #e0e0e0;
-            flex-shrink: 0;
-            flex: 0 0 auto;
-        }
-        
-                .edit-panel h4 {
-            margin-bottom: 10px;
-            color: #333;
-            font-size: 1.1em;
-        }
-        
-                .form-group {
-            margin-bottom: 10px;
-        }
-        
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #666;
-            font-weight: 600;
-        }
-        
-                .form-group input {
-            width: 100%;
-            padding: 10px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-        
-                .form-group textarea {
-            width: 100%;
-            padding: 8px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 13px;
-            min-height: 60px;
-            max-height: 100px;
-            resize: vertical;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
-        
-        .form-group textarea:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .form-group input:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        
-        .status-bar {
-            padding: 15px 30px;
-            background: #333;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .loading {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 30px 50px;
-            border-radius: 10px;
-            z-index: 1000;
-        }
-        
-        .loading.active {
-            display: block;
-        }
-        
-        input[type="file"] {
-            display: none;
-        }
+        /* White mode */
+        .image-container.white-mode { background: white; }
+        .image-container.white-mode #imageCanvas { opacity: 0; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🔍 OCR Web Editor</h1>
-            <p>Интерактивный редактор распознавания текста</p>
+<body class="bg-surface text-on-surface">
+    <!-- Top Navigation -->
+    <nav class="fixed top-0 w-full z-50 bg-surface/80 backdrop-blur-md shadow-lg h-16 flex justify-between items-center px-8">
+        <div class="flex items-center gap-8">
+            <span class="text-xl font-bold tracking-tight text-primary font-headline">Archivist OCR</span>
+            <div class="hidden md:flex gap-6">
+                <a href="#" class="text-gray-500 hover:text-primary transition-colors font-headline">History</a>
+                <a href="#" class="text-gray-500 hover:text-primary transition-colors font-headline">Export</a>
+            </div>
         </div>
-        
-        <div class="toolbar">
-            <label for="fileInput" class="btn btn-primary">
-                📁 Открыть изображение
+        <div class="flex items-center gap-4">
+            <button class="p-2 rounded-lg hover:bg-surface-container transition-all">
+                <span class="material-symbols-outlined text-primary">settings</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="pt-24 pb-12 px-8 max-w-7xl mx-auto">
+        <!-- Hero Section -->
+        <section class="mb-12">
+            <h1 class="text-5xl font-extrabold tracking-tight text-primary mb-4">
+                Transform documents into <span class="text-secondary">digital intelligence</span>
+            </h1>
+            <p class="text-lg text-gray-600 max-w-2xl">
+                Precision OCR processing with local privacy. Upload images or PDFs and extract text instantly.
+            </p>
+        </section>
+
+        <!-- Toolbar -->
+        <div class="bg-surface-container-low p-6 rounded-xl mb-8 flex flex-wrap gap-4 items-center">
+            <label for="fileInput" class="bg-gradient-to-br from-primary to-primary-container text-on-primary px-6 py-3 rounded-lg font-semibold cursor-pointer hover:opacity-90 transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined">upload_file</span>
+                <span>Upload Document</span>
             </label>
-            <input type="file" id="fileInput" accept="image/*">
+            <input type="file" id="fileInput" accept="image/*,application/pdf" class="hidden">
             
-            <button class="btn btn-info" onclick="runOCR()">
-                🔍 Распознать текст
+            <button onclick="runOCR()" class="bg-secondary text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined">document_scanner</span>
+                <span>Run OCR</span>
             </button>
             
-            <button class="btn btn-warning" onclick="saveImage()">
-                💾 Сохранить
+            <button onclick="toggleBackground()" id="bgToggleBtn" class="bg-surface-container text-primary px-6 py-3 rounded-lg font-semibold hover:bg-surface-container-low transition-all">
+                White Background
             </button>
             
-                        <button class="btn btn-purple" onclick="toggleAddMode()" id="addModeBtn">
-                ➕ Добавить метку
+            <button onclick="resetZoom()" class="bg-surface-container text-primary px-6 py-3 rounded-lg font-semibold hover:bg-surface-container-low transition-all">
+                Reset Zoom
             </button>
             
-            <button class="btn btn-danger" onclick="deleteSelected()">
-                🗑️ Удалить
+            <button onclick="saveImage()" class="bg-surface-container text-primary px-6 py-3 rounded-lg font-semibold hover:bg-surface-container-low transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined">download</span>
+                <span>Save</span>
             </button>
             
-                        <button class="btn btn-info" onclick="toggleBackground()" id="bgToggleBtn">
-                            🖼️ Белый фон
-                        </button>
-            
-                        <div style="margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: #667eea; border-radius: 8px; color: white; font-size: 14px; font-weight: 600;">
-                            📋 <span id="boxCount">0</span>
-                        </div>
-        </div>
-        
-        <div class="main-content">
-            <div class="canvas-area">
-                <div class="image-container" id="imageContainer" style="display:none;">
-                    <img id="imageCanvas" src="" alt="">
-                    <div id="textOverlay"></div>
-                </div>
-                <div id="placeholder" style="text-align:center; padding:100px; color:#999;">
-                    <h2>📁 Загрузите изображение для начала работы</h2>
-                    <p>Поддерживаются форматы: PNG, JPG, JPEG, BMP, TIFF</p>
-                </div>
+            <!-- PDF Controls -->
+            <div id="pdfControls" style="display: none;" class="ml-auto flex items-center gap-3">
+                <button onclick="previousPage()" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-semibold">
+                    ◀ Previous
+                </button>
+                <span class="px-4 py-2 bg-surface-container rounded-lg font-semibold">
+                    Page <span id="currentPage">1</span> / <span id="totalPages">1</span>
+                </span>
+                <button onclick="nextPage()" class="bg-primary text-on-primary px-4 py-2 rounded-lg font-semibold">
+                    Next ▶
+                </button>
             </div>
             
-                        <div class="sidebar">
-                <div class="text-list" id="textList">
-                    <p style="text-align:center; color:#999; padding:20px;">
-                        Запустите OCR для распознавания текста
+            <span class="ml-auto px-4 py-2 bg-secondary/20 text-secondary rounded-full font-semibold text-sm">
+                <span id="boxCount">0</span> items
+            </span>
+        </div>
+
+        <!-- Split View -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Document View -->
+            <div class="bg-surface-container-low rounded-xl overflow-hidden border border-gray-200">
+                <div class="p-4 bg-surface-container flex justify-between items-center">
+                    <h2 class="font-headline font-bold text-primary">Document View</h2>
+                    <div class="text-sm text-gray-600" id="imageInfo"></div>
+                </div>
+                <div class="p-8 overflow-auto" style="max-height: 800px;">
+                    <div class="image-container relative inline-block" id="imageContainer" style="display:none;">
+                        <img id="imageCanvas" src="" alt="" class="block w-full h-auto">
+                        <div id="textOverlay"></div>
+                    </div>
+                    <div id="placeholder" class="text-center py-32 text-gray-400">
+                        <span class="material-symbols-outlined text-6xl mb-4 block">upload_file</span>
+                        <h3 class="text-xl font-bold mb-2">Upload a document to begin</h3>
+                        <p>Supports PDF, PNG, JPG, JPEG, BMP, TIFF</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Text Editor -->
+            <div class="bg-surface-container-low rounded-xl overflow-hidden border border-gray-200 flex flex-col">
+                <div class="p-4 bg-surface-container">
+                    <h2 class="font-headline font-bold text-primary">Extracted Text</h2>
+                </div>
+                <div class="flex-1 p-6" id="textList">
+                    <p class="text-center text-gray-400 py-20">
+                        Run OCR to extract text from your document
                     </p>
                 </div>
-                
-                                <div class="edit-panel">
-                                    <h4>Редактировать</h4>
-                                    <div class="form-group">
-                                        <label>Текст:</label>
-                                        <input type="text" id="editText" placeholder="Выберите элемент">
-                                    </div>
-                                    <button class="btn btn-primary" onclick="updateText()" style="width:100%;">
-                                        Обновить
-                                    </button>
-                                </div>
+                <div class="p-4 bg-surface-container border-t border-gray-200">
+                    <div class="mb-3">
+                        <label class="block text-sm font-semibold text-primary mb-2">Edit Selected Text:</label>
+                        <input type="text" id="editText" placeholder="Select an item to edit" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/20">
+                    </div>
+                    <div class="flex gap-3">
+                        <button onclick="updateText()" class="flex-1 bg-primary text-on-primary py-2 rounded-lg font-semibold hover:opacity-90">
+                            Update
+                        </button>
+                        <button onclick="deleteSelected()" class="px-6 bg-red-500 text-white py-2 rounded-lg font-semibold hover:opacity-90">
+                            Delete
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        <div class="status-bar">
-            <span id="statusText">Готов к работе</span>
-            <span id="imageInfo"></span>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-xl p-8 text-center">
+            <div class="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
+            <p class="text-lg font-semibold">Processing...</p>
         </div>
     </div>
-    
-    <div class="loading" id="loading">
-        <h3>⏳ Обработка...</h3>
-    </div>
-    
+
     <script>
         let selectedBoxId = null;
         let boxes = [];
         let draggedElement = null;
         let dragOffset = { x: 0, y: 0 };
+        let isPDF = false;
+        let currentPage = 1;
+        let totalPages = 1;
+        let zoomLevel = 1;
+        let imageNaturalWidth = 0;
+        let imageNaturalHeight = 0;
+
+        document.getElementById('fileInput').addEventListener('change', uploadImage);
         
-                document.getElementById('fileInput').addEventListener('change', uploadImage);
-        document.getElementById("imageContainer").addEventListener("click", function(e) {
-            if (addMode && (e.target.id === "imageCanvas" || e.target.id === "imageContainer")) {
-                const rect = this.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                const text = prompt("Введите текст:");
-                if (text) {
-                    fetch("/add_box", {
-                        method: "POST",
-                        headers: {"Content-Type": "application/json"},
-                        body: JSON.stringify({text, x, y, width: text.length * 10, height: 20})
-                    }).then(r => r.json()).then(d => {
-                        if (d.success) {
-                            boxes.push(d.box);
-                            updateTextList();
-                            renderTextOverlay();
-                            addMode = false;
-                            document.getElementById("addModeBtn").style.background = "#9C27B0";
-                            document.getElementById("addModeBtn").innerHTML = "➕ Добавить метку";
-                        }
-                    });
+        // Zoom with Ctrl + wheel
+        document.getElementById('imageContainer').addEventListener('wheel', function(e) {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
                 }
             }
-        });
-        
-        
-        
+        }, { passive: false });
+
         async function uploadImage(event) {
             const file = event.target.files[0];
             if (!file) return;
             
             showLoading(true);
-            setStatus('Загрузка изображения...');
-            
             const formData = new FormData();
             formData.append('file', file);
             
@@ -398,25 +229,38 @@
                 
                 if (data.success) {
                     const img = document.getElementById('imageCanvas');
+                    img.onload = function() {
+                        imageNaturalWidth = img.naturalWidth;
+                        imageNaturalHeight = img.naturalHeight;
+                        fitToScreen();
+                    };
                     img.src = 'data:image/png;base64,' + data.image;
                     document.getElementById('imageContainer').style.display = 'inline-block';
                     document.getElementById('placeholder').style.display = 'none';
                     document.getElementById('imageInfo').textContent = data.filename;
-                    setStatus('Изображение загружено');
+                    
+                    isPDF = data.is_pdf || false;
+                    if (isPDF) {
+                        currentPage = data.current_page || 1;
+                        totalPages = data.total_pages || 1;
+                        document.getElementById('pdfControls').style.display = 'flex';
+                        document.getElementById('currentPage').textContent = currentPage;
+                        document.getElementById('totalPages').textContent = totalPages;
+                    } else {
+                        document.getElementById('pdfControls').style.display = 'none';
+                    }
                 } else {
-                    alert('Ошибка: ' + data.error);
+                    alert('Error: ' + data.error);
                 }
             } catch (error) {
-                alert('Ошибка загрузки: ' + error);
+                alert('Upload error: ' + error);
             } finally {
                 showLoading(false);
             }
         }
-        
+
         async function runOCR() {
             showLoading(true);
-            setStatus('Распознавание текста...');
-            
             try {
                 const response = await fetch('/ocr', { method: 'POST' });
                 const data = await response.json();
@@ -425,217 +269,150 @@
                     boxes = data.boxes;
                     updateTextList();
                     renderTextOverlay();
-                    setStatus(`Распознано ${data.count} элементов`);
-                } else {
-                    alert('Ошибка OCR: ' + data.error);
                 }
             } catch (error) {
-                alert('Ошибка: ' + error);
+                alert('OCR error: ' + error);
             } finally {
                 showLoading(false);
             }
         }
-        
+
         function updateTextList() {
             const list = document.getElementById('textList');
             list.innerHTML = '';
             
             boxes.forEach((box, index) => {
                 const item = document.createElement('div');
-                item.className = 'text-item';
+                item.className = 'p-4 mb-2 bg-white rounded-lg cursor-pointer hover:bg-gray-50 transition-colors';
                 item.onclick = () => selectBox(box.id);
-                
                 item.innerHTML = `
-                    <div class="text-item-text">${box.text}</div>
-                    <div class="text-item-info">
-                        Позиция: (${box.x}, ${box.y})
-                    </div>
+                    <div class="font-semibold text-primary">${box.text}</div>
+                    <div class="text-xs text-gray-500 mt-1">Position: (${box.x}, ${box.y})</div>
                 `;
-                
                 list.appendChild(item);
             });
             
             document.getElementById('boxCount').textContent = boxes.length;
         }
-        
-        function selectBox(id) {
-            selectedBoxId = id;
-            
-            // Update list UI
-            document.querySelectorAll('.text-item').forEach((item, index) => {
-                item.classList.toggle('selected', boxes[index].id === id);
-            });
-            
-            // Update overlay UI
-            document.querySelectorAll('.text-overlay').forEach(el => {
-                el.classList.toggle('selected', parseInt(el.dataset.id) === id);
-            });
-            
-            // Update edit field
-            const box = boxes.find(b => b.id === id);
-            if (box) {
-                document.getElementById('editText').value = box.text;
-            }
-        }
-        
-        async function updateText() {
-            if (selectedBoxId === null) {
-                alert('Выберите элемент для редактирования');
-                return;
-            }
-            
-            const newText = document.getElementById('editText').value;
-            
-            try {
-                const response = await fetch('/update_box', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: selectedBoxId, text: newText })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    const box = boxes.find(b => b.id === selectedBoxId);
-                    if (box) box.text = newText;
-                    updateTextList();
-                    renderTextOverlay();
-                    setStatus('Текст обновлен');
-                }
-            } catch (error) {
-                alert('Ошибка: ' + error);
-            }
-        }
-        
-        async function deleteSelected() {
-            if (selectedBoxId === null) {
-                alert('Выберите элемент для удаления');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/delete_box', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ id: selectedBoxId })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    boxes = boxes.filter(b => b.id !== selectedBoxId);
-                    selectedBoxId = null;
-                    document.getElementById('editText').value = '';
-                    updateTextList();
-                    renderTextOverlay();
-                    setStatus('Элемент удален');
-                }
-            } catch (error) {
-                alert('Ошибка: ' + error);
-            }
-        }
-        
-        async function addLabel() {
-            const text = prompt('Введите текст метки:');
-            if (!text) return;
-            
-            const x = prompt('X координата:', '10');
-            const y = prompt('Y координата:', '10');
-            
-            try {
-                const response = await fetch('/add_box', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ text, x, y, width: 100, height: 30 })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    boxes.push(data.box);
-                    updateTextList();
-                    renderTextOverlay();
-                    setStatus('Метка добавлена');
-                }
-            } catch (error) {
-                alert('Ошибка: ' + error);
-            }
-        }
-        
+
         function renderTextOverlay() {
             const overlay = document.getElementById('textOverlay');
             overlay.innerHTML = '';
+            
+            if (!imageNaturalWidth || !imageNaturalHeight) return;
+            
+            const img = document.getElementById('imageCanvas');
+            const scaleX = img.clientWidth / imageNaturalWidth;
+            const scaleY = img.clientHeight / imageNaturalHeight;
             
             boxes.forEach(box => {
                 const textEl = document.createElement('div');
                 textEl.className = 'text-overlay';
                 textEl.textContent = box.text;
-                textEl.style.left = box.x + 'px';
-                textEl.style.top = box.y + 'px';
-                textEl.style.fontSize = Math.max(12, box.height * 0.8) + 'px';
+                textEl.style.left = (box.x * scaleX) + 'px';
+                textEl.style.top = (box.y * scaleY) + 'px';
+                textEl.style.fontSize = Math.max(10, box.height * scaleY * 0.7) + 'px';
                 textEl.dataset.id = box.id;
                 
-                // Click to select
                 textEl.addEventListener('click', (e) => {
                     e.stopPropagation();
                     selectBox(box.id);
                 });
                 
-                // Drag to move
                 textEl.addEventListener('mousedown', startDrag);
-                
                 overlay.appendChild(textEl);
             });
         }
-        
-        function startDrag(e) {
-            if (e.button !== 0) return; // Only left click
+
+        function selectBox(id) {
+            selectedBoxId = id;
+            document.querySelectorAll('.text-overlay').forEach(el => {
+                el.classList.toggle('selected', parseInt(el.dataset.id) === id);
+            });
+            const box = boxes.find(b => b.id === id);
+            if (box) {
+                document.getElementById('editText').value = box.text;
+            }
+        }
+
+        async function updateText() {
+            if (selectedBoxId === null) return;
+            const newText = document.getElementById('editText').value;
             
+            try {
+                await fetch('/update_box', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: selectedBoxId, text: newText })
+                });
+                
+                const box = boxes.find(b => b.id === selectedBoxId);
+                if (box) box.text = newText;
+                updateTextList();
+                renderTextOverlay();
+            } catch (error) {
+                alert('Update error: ' + error);
+            }
+        }
+
+        async function deleteSelected() {
+            if (selectedBoxId === null) return;
+            
+            try {
+                await fetch('/delete_box', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: selectedBoxId })
+                });
+                
+                boxes = boxes.filter(b => b.id !== selectedBoxId);
+                selectedBoxId = null;
+                document.getElementById('editText').value = '';
+                updateTextList();
+                renderTextOverlay();
+            } catch (error) {
+                alert('Delete error: ' + error);
+            }
+        }
+
+        function startDrag(e) {
+            if (e.button !== 0) return;
             draggedElement = e.target;
             const rect = draggedElement.getBoundingClientRect();
             const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
-            
             dragOffset.x = e.clientX - rect.left;
             dragOffset.y = e.clientY - rect.top;
-            
             draggedElement.classList.add('dragging');
-            
             document.addEventListener('mousemove', onDrag);
             document.addEventListener('mouseup', stopDrag);
-            
             e.preventDefault();
         }
-        
+
         function onDrag(e) {
             if (!draggedElement) return;
-            
             const containerRect = document.getElementById('imageContainer').getBoundingClientRect();
-            
+            const img = document.getElementById('imageCanvas');
             let newX = e.clientX - containerRect.left - dragOffset.x;
             let newY = e.clientY - containerRect.top - dragOffset.y;
-            
-            // Keep within bounds
-            newX = Math.max(0, Math.min(newX, containerRect.width - draggedElement.offsetWidth));
-            newY = Math.max(0, Math.min(newY, containerRect.height - draggedElement.offsetHeight));
-            
+            newX = Math.max(0, Math.min(newX, img.clientWidth - draggedElement.offsetWidth));
+            newY = Math.max(0, Math.min(newY, img.clientHeight - draggedElement.offsetHeight));
             draggedElement.style.left = newX + 'px';
             draggedElement.style.top = newY + 'px';
         }
-        
+
         async function stopDrag(e) {
             if (!draggedElement) return;
-            
             draggedElement.classList.remove('dragging');
-            
-            // Update box position
             const boxId = parseInt(draggedElement.dataset.id);
             const box = boxes.find(b => b.id === boxId);
             
             if (box) {
-                box.x = parseInt(draggedElement.style.left);
-                box.y = parseInt(draggedElement.style.top);
+                const img = document.getElementById('imageCanvas');
+                const scaleX = imageNaturalWidth / img.clientWidth;
+                const scaleY = imageNaturalHeight / img.clientHeight;
+                box.x = Math.round(parseInt(draggedElement.style.left) * scaleX);
+                box.y = Math.round(parseInt(draggedElement.style.top) * scaleY);
                 
-                // Update on server
                 await fetch('/update_position', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -649,48 +426,116 @@
             document.removeEventListener('mouseup', stopDrag);
             draggedElement = null;
         }
-        
+
+        function toggleBackground() {
+            const container = document.getElementById('imageContainer');
+            const btn = document.getElementById('bgToggleBtn');
+            container.classList.toggle('white-mode');
+            btn.textContent = container.classList.contains('white-mode') ? 'Show Image' : 'White Background';
+        }
+
+        function zoomIn() {
+            zoomLevel = Math.min(zoomLevel + 0.25, 3);
+            applyZoom();
+        }
+
+        function zoomOut() {
+            zoomLevel = Math.max(zoomLevel - 0.25, 0.25);
+            applyZoom();
+        }
+
+        function resetZoom() {
+            fitToScreen();
+        }
+
+        function fitToScreen() {
+            const canvasArea = document.querySelector('.overflow-auto');
+            const img = document.getElementById('imageCanvas');
+            if (imageNaturalWidth > 0 && canvasArea) {
+                const areaWidth = canvasArea.clientWidth - 64;
+                const areaHeight = canvasArea.clientHeight - 64;
+                const scaleX = areaWidth / imageNaturalWidth;
+                const scaleY = areaHeight / imageNaturalHeight;
+                zoomLevel = Math.min(scaleX, scaleY, 1) * 1.2;
+                zoomLevel = Math.min(zoomLevel, 1);
+                zoomLevel = Math.max(zoomLevel, 0.3);
+                applyZoom();
+            }
+        }
+
+        function applyZoom() {
+            const img = document.getElementById('imageCanvas');
+            if (imageNaturalWidth > 0) {
+                img.style.width = (imageNaturalWidth * zoomLevel) + 'px';
+                img.style.height = 'auto';
+                setTimeout(() => renderTextOverlay(), 10);
+            }
+        }
+
+        async function nextPage() {
+            if (!isPDF || currentPage >= totalPages) return;
+            showLoading(true);
+            try {
+                const response = await fetch('/pdf_page', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page: currentPage + 1 })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const img = document.getElementById('imageCanvas');
+                    img.onload = function() {
+                        imageNaturalWidth = img.naturalWidth;
+                        imageNaturalHeight = img.naturalHeight;
+                        renderTextOverlay();
+                    };
+                    img.src = 'data:image/png;base64,' + data.image;
+                    currentPage = data.current_page;
+                    document.getElementById('currentPage').textContent = currentPage;
+                    boxes = [];
+                    updateTextList();
+                }
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function previousPage() {
+            if (!isPDF || currentPage <= 1) return;
+            showLoading(true);
+            try {
+                const response = await fetch('/pdf_page', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ page: currentPage - 1 })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const img = document.getElementById('imageCanvas');
+                    img.onload = function() {
+                        imageNaturalWidth = img.naturalWidth;
+                        imageNaturalHeight = img.naturalHeight;
+                        renderTextOverlay();
+                    };
+                    img.src = 'data:image/png;base64,' + data.image;
+                    currentPage = data.current_page;
+                    document.getElementById('currentPage').textContent = currentPage;
+                    boxes = [];
+                    updateTextList();
+                }
+            } finally {
+                showLoading(false);
+            }
+        }
+
         async function saveImage() {
             window.location.href = '/save_image';
-            setStatus('Изображение сохранено');
         }
-        
-        let addMode = false;
-        
-                function toggleAddMode() {
-            addMode = !addMode;
-            const btn = document.getElementById("addModeBtn");
-            if (addMode) {
-                btn.style.background = "#4CAF50";
-                btn.innerHTML = "✓ Кликните на изображение";
-            } else {
-                btn.style.background = "#9C27B0";
-                btn.innerHTML = "➕ Добавить метку";
-            }
-        }
-        
-                function toggleBackground() {
-            const canvas = document.getElementById("imageCanvas");
-            const container = document.getElementById("imageContainer");
-            const btn = document.getElementById("bgToggleBtn");
-            
-            canvas.classList.toggle('hidden');
-            container.classList.toggle('white-bg');
-            
-            if (canvas.classList.contains('hidden')) {
-                btn.innerHTML = "🖼️ Показать изображение";
-            } else {
-                btn.innerHTML = "🖼️ Белый фон";
-            }
-        }
-        
+
         function showLoading(show) {
-            document.getElementById('loading').classList.toggle('active', show);
-        }
-        
-        function setStatus(text) {
-            document.getElementById('statusText').textContent = text;
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
         }
     </script>
 </body>
 </html>
+</contents>
