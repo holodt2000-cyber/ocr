@@ -124,7 +124,18 @@ def run_ocr():
         return jsonify({'error': 'EasyOCR не готов'}), 500
     
     try:
+        import logging
+        logging.basicConfig(level=logging.INFO)
+        logger = logging.getLogger(__name__)
+        
+        logger.info(f"Starting OCR on: {session_data['image_path']}")
+        
+        # Check if file exists
+        if not os.path.exists(session_data['image_path']):
+            return jsonify({'error': f"Файл не найден: {session_data['image_path']}"}), 400
+        
         results = reader.readtext(session_data['image_path'])
+        logger.info(f"OCR completed. Found {len(results)} text regions")
         
         text_boxes = []
         for i, (bbox, text, conf) in enumerate(results):
@@ -150,7 +161,10 @@ def run_ocr():
             'count': len(text_boxes)
         })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"OCR Error: {error_details}")
+        return jsonify({'error': f'Ошибка OCR: {str(e)}'}), 500
 
 @app.route('/update_box', methods=['POST'])
 def update_box():
