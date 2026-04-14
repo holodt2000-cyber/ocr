@@ -11,6 +11,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import pytesseract
 import json
+from utils.pdf_processor import PDFProcessor
 
 # Auto-detect Tesseract
 tesseract_found = False
@@ -45,15 +46,28 @@ app.config['SECRET_KEY'] = 'ocr-editor-secret-key'
 # Store current session data
 session_data = {
     'image_path': None,
-    'text_boxes': []
+    'text_boxes': [],
+    'pdf_path': None,
+    'pdf_page_count': 0,
+    'current_page': 0,
+    'is_pdf': False,
+    'page_cache': {}  # Cache for converted pages
 }
+
+# Initialize PDF processor
+try:
+    pdf_processor = PDFProcessor()
+    PDF_AVAILABLE = True
+except Exception as e:
+    print(f"PDF support not available: {e}")
+    PDF_AVAILABLE = False
 
 @app.route('/')
 def index():
     """Main page."""
     return render_template('index.html')
 
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'tiff', 'tif'}
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'bmp', 'tiff', 'tif', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -69,25 +83,68 @@ def upload_image():
         return jsonify({'error': 'No file selected'}), 400
     
     if not allowed_file(file.filename):
-        return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, BMP, TIFF'}), 400
+        return jsonify({'error': 'Invalid file type. Allowed: PNG, JPG, JPEG, BMP, TIFF, PDF'}), 400
     
     if file:
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        session_data['image_path'] = filepath
-        session_data['text_boxes'] = []
+        # Check if PDF
+        is_pdf = filename.lower().endswith('.pdf')
         
-        # Convert image to base64 for display
-        with open(filepath, 'rb') as f:
-            img_data = base64.b64encode(f.read()).decode('utf-8')
-        
-        return jsonify({
-            'success': True,
-            'image': img_data,
-            'filename': filename
-        })
+                if is_pdf and PDF_AVAILABLE:
+            try:
+                # Get page count without converting all pages
+                page_count = pdf_processor.get_pdf_page_count(filepath)
+                
+                # Convert only first page
+                first_page_path = pdf_processor.pdf_page_to_image(
+                    filepath, 1, app.config['UPLOAD_FOLDER']
+                )
+                
+                session_data['pdf_path'] = filepath
+                session_data['pdf_page_count'] = page_count
+                session_data['current_page'] = 0
+                session_data['is_pdf'] = True
+                session_data['image_path'] = first_page_path
+                session_data['text_boxes'] = []
+                session_data['page_cache'] = {0: first_page_path}
+                
+                # Convert first page to base64
+                with open(image_paths[0], 'rb') as f:
+                    img_data = base64.b64encode(f.read()).decode('utf-8')
+                
+                                return jsonify({
+                    'success': True,
+                    'image': img_data,
+                    'filename': filename,
+                    'is_pdf': True,
+                    'total_pages': page_count,
+                    'current_page': 1
+                })
+            except Exception as e:
+                return jsonify({'error': f'Failed to process PDF: {str(e)}'}), 500
+        elif is_pdf and not PDF_AVAILABLE:
+            return jsonify({'error': 'PDF support not available. See POPPLER_INSTALL.md'}), 400
+        else:
+                        session_data['image_path'] = filepath
+            session_data['text_boxes'] = []
+            session_data['is_pdf'] = False
+            session_data['pdf_path'] = None
+            session_data['pdf_page_count'] = 0
+            session_data['page_cache'] = {}
+            
+            # Convert image to base64 for display
+            with open(filepath, 'rb') as f:
+                img_data = base64.b64encode(f.read()).decode('utf-8')
+            
+            return jsonify({
+                'success': True,
+                'image': img_data,
+                'filename': filename,
+                'is_pdf': False
+            })
 
 @app.route('/ocr', methods=['POST'])
 def run_ocr():
@@ -282,6 +339,58 @@ def get_boxes():
     return jsonify({
         'success': True,
         'boxes': session_data['text_boxes']
+    })
+
+@app.route('/pdf_page', methods=['POST'])
+def change_pdf_page():
+    """Change current PDF page (lazy loading)."""
+    if not session_data['is_pdf']:
+        return jsonify({'error': 'Not a PDF document'}), 400
+    
+    data = request.json
+    page_number = data.get('page', 1) - 1  # Convert to 0-indexed
+    
+    if page_number < 0 or page_number >= session_data['pdf_page_count']:
+        return jsonify({'error': 'Invalid page number'}), 400
+    
+    try:
+        # Check if page is already cached
+        if page_number in session_data['page_cache']:
+            image_path = session_data['page_cache'][page_number]
+        else:
+            # Convert page on demand
+            image_path = pdf_processor.pdf_page_to_image(
+                session_data['pdf_path'],
+                page_number + 1,  # 1-indexed for pdf_processor
+                app.config['UPLOAD_FOLDER']
+            )
+            # Cache the converted page
+            session_data['page_cache'][page_number] = image_path
+        
+        session_data['current_page'] = page_number
+        session_data['image_path'] = image_path
+        session_data['text_boxes'] = []  # Clear text boxes for new page
+        
+        # Convert page to base64
+        with open(image_path, 'rb') as f:
+            img_data = base64.b64encode(f.read()).decode('utf-8')
+        
+        return jsonify({
+            'success': True,
+            'image': img_data,
+            'current_page': page_number + 1,
+            'total_pages': session_data['pdf_page_count']
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/pdf_info', methods=['GET'])
+def get_pdf_info():
+    """Get PDF information."""
+    return jsonify({
+        'is_pdf': session_data['is_pdf'],
+        'total_pages': session_data['pdf_page_count'] if session_data['is_pdf'] else 0,
+        'current_page': session_data['current_page'] + 1 if session_data['is_pdf'] else 0
     })
 
 if __name__ == '__main__':
