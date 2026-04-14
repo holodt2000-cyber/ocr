@@ -90,10 +90,10 @@ def upload_image():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         
-        # Check if PDF
+                # Check if PDF
         is_pdf = filename.lower().endswith('.pdf')
         
-                if is_pdf and PDF_AVAILABLE:
+        if is_pdf and PDF_AVAILABLE:
             try:
                 # Get page count without converting all pages
                 page_count = pdf_processor.get_pdf_page_count(filepath)
@@ -111,24 +111,24 @@ def upload_image():
                 session_data['text_boxes'] = []
                 session_data['page_cache'] = {0: first_page_path}
                 
-                # Convert first page to base64
-                with open(image_paths[0], 'rb') as f:
+                                # Convert first page to base64
+                with open(first_page_path, 'rb') as f:
                     img_data = base64.b64encode(f.read()).decode('utf-8')
                 
-                                return jsonify({
+                return jsonify({
                     'success': True,
                     'image': img_data,
                     'filename': filename,
                     'is_pdf': True,
                     'total_pages': page_count,
                     'current_page': 1
-                })
+                                })
             except Exception as e:
                 return jsonify({'error': f'Failed to process PDF: {str(e)}'}), 500
         elif is_pdf and not PDF_AVAILABLE:
             return jsonify({'error': 'PDF support not available. See POPPLER_INSTALL.md'}), 400
         else:
-                        session_data['image_path'] = filepath
+            session_data['image_path'] = filepath
             session_data['text_boxes'] = []
             session_data['is_pdf'] = False
             session_data['pdf_path'] = None
