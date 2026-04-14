@@ -5,7 +5,7 @@ import sys
 import os
 from pathlib import Path
 import cv2
-import pytesseract
+import easyocr
 from PIL import Image
 import logging
 from utils.pdf_processor import PDFProcessor
@@ -13,29 +13,19 @@ from utils.pdf_processor import PDFProcessor
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-# Auto-detect Tesseract path on Windows
-if os.name == 'nt':  # Windows
-    tesseract_paths = [
-        os.path.expanduser(r'~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'),
-        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
-        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe'
-    ]
-    for path in tesseract_paths:
-        if os.path.exists(path):
-            pytesseract.pytesseract.tesseract_cmd = path
-            tessdata_dir = os.path.join(os.path.dirname(path), 'tessdata')
-            os.environ['TESSDATA_PREFIX'] = tessdata_dir
-            logger.info(f"Tesseract found at: {path}")
-            logger.info(f"TESSDATA_PREFIX set to: {tessdata_dir}")
-            break
-
 class OCRProcessor:
-    """OCR processor using Tesseract."""
+    """OCR processor using EasyOCR."""
     
-    def __init__(self, config: str = r'--oem 3 --psm 6', lang: str = 'eng'):
-        self.config = config
+    def __init__(self, lang: list = ['ru', 'en'], gpu: bool = False):
         self.lang = lang
-        self._check_tesseract()
+        self.gpu = gpu
+        logger.info("Initializing EasyOCR...")
+        try:
+            self.reader = easyocr.Reader(lang, gpu=gpu)
+            logger.info("EasyOCR initialized successfully")
+        except Exception as e:
+            logger.error(f"Failed to initialize EasyOCR: {e}")
+            raise
         
         # Initialize PDF processor
         try:
@@ -45,27 +35,9 @@ class OCRProcessor:
             logger.warning(f"PDF support not available: {e}")
             self.pdf_support = False
     
-    def _check_tesseract(self):
-        """Check if Tesseract is available."""
-        try:
-            pytesseract.get_tesseract_version()
-        except Exception as e:
-            error_msg = (
-                "\n" + "="*60 + "\n"
-                "ERROR: Tesseract OCR is not installed or not in PATH!\n"
-                "="*60 + "\n"
-                "Please install Tesseract OCR:\n"
-                "  - Windows: See INSTALL.md for detailed instructions\n"
-                "  - macOS: brew install tesseract\n"
-                "  - Linux: sudo apt-get install tesseract-ocr\n\n"
-                "After installation, restart your terminal/command prompt.\n"
-                "For detailed instructions, see: INSTALL.md\n"
-                "="*60
-            )
-            logger.error(error_msg)
-            raise RuntimeError(error_msg) from e
     
-    def process_image(self, image_path: str) -> str:
+    
+        def process_image(self, image_path: str) -> str:
         """Process image and extract text."""
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"Image not found: {image_path}")
@@ -73,12 +45,10 @@ class OCRProcessor:
         logger.info(f"Processing image: {image_path}")
         
         try:
-            img = cv2.imread(image_path)
-            if img is None:
-                raise ValueError(f"Failed to load image: {image_path}")
-            
-            result = pytesseract.image_to_string(img, lang=self.lang, config=self.config)
-            logger.info("OCR completed successfully")
+            results = self.reader.readtext(image_path)
+            text_lines = [text for (bbox, text, conf) in results]
+            result = '\n'.join(text_lines)
+            logger.info(f"OCR completed successfully. Found {len(text_lines)} text blocks")
             return result.strip()
         except Exception as e:
             logger.error(f"OCR processing failed: {e}")
