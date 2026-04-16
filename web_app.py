@@ -9,18 +9,22 @@ from werkzeug.utils import secure_filename
 import cv2
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-import easyocr
+import pytesseract
 import json
 from utils.pdf_processor import PDFProcessor
 
-# Initialize EasyOCR reader
-print("Инициализация EasyOCR...")
-try:
-    reader = easyocr.Reader(['ru', 'en'], gpu=False)
-    print("EasyOCR успешно инициализирован")
-except Exception as e:
-    print(f"Ошибка инициализации EasyOCR: {e}")
-    reader = None
+# Auto-detect Tesseract on Windows
+if os.name == 'nt':
+    possible_paths = [
+        r'C:\Program Files\Tesseract-OCR\tesseract.exe',
+        r'C:\Program Files (x86)\Tesseract-OCR\tesseract.exe',
+        os.path.expanduser(r'~\AppData\Local\Programs\Tesseract-OCR\tesseract.exe')
+    ]
+    for path in possible_paths:
+        if os.path.exists(path):
+            pytesseract.pytesseract.tesseract_cmd = path
+            print(f"Tesseract найден: {path}")
+            break
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
@@ -120,38 +124,34 @@ def run_ocr():
     if not session_data['image_path']:
         return jsonify({'error': 'Нет изображения'}), 400
     
-    if reader is None:
-        return jsonify({'error': 'EasyOCR не готов'}), 500
-    
     try:
-        import logging
-        logging.basicConfig(level=logging.INFO)
-        logger = logging.getLogger(__name__)
-        
-        logger.info(f"Starting OCR on: {session_data['image_path']}")
-        
-        # Check if file exists
         if not os.path.exists(session_data['image_path']):
             return jsonify({'error': f"Файл не найден: {session_data['image_path']}"}), 400
         
-        results = reader.readtext(session_data['image_path'])
-        logger.info(f"OCR completed. Found {len(results)} text regions")
+        img = cv2.imread(session_data['image_path'])
+        if img is None:
+            return jsonify({'error': 'Не удалось загрузить изображение'}), 400
+        
+        # Use Tesseract with Russian and English
+        data = pytesseract.image_to_data(img, lang='rus+eng', output_type=pytesseract.Output.DICT)
         
         text_boxes = []
-        for i, (bbox, text, conf) in enumerate(results):
-            x_coords = [point[0] for point in bbox]
-            y_coords = [point[1] for point in bbox]
-            
-            box = {
-                'id': i,
-                'text': text,
-                'x': int(min(x_coords)),
-                'y': int(min(y_coords)),
-                'width': int(max(x_coords) - min(x_coords)),
-                'height': int(max(y_coords) - min(y_coords)),
-                'confidence': int(conf * 100)
-            }
-            text_boxes.append(box)
+        n_boxes = len(data['text'])
+        
+        for i in range(n_boxes):
+            if int(data['conf'][i]) > 30:
+                text = data['text'][i].strip()
+                if text:
+                    box = {
+                        'id': len(text_boxes),
+                        'text': text,
+                        'x': int(data['left'][i]),
+                        'y': int(data['top'][i]),
+                        'width': int(data['width'][i]),
+                        'height': int(data['height'][i]),
+                        'confidence': int(data['conf'][i])
+                    }
+                    text_boxes.append(box)
         
         session_data['text_boxes'] = text_boxes
         
